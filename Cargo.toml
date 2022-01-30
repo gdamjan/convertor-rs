@@ -1,0 +1,8 @@
+[package]
+name = "convertor-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+zip = "0.5.13"
+quick-xml = "0.22.0"
