@@ -91,6 +91,14 @@ fn main() -> std::io::Result<()> {
   let output = File::create("fixtures/solved.odt")?;
   let mut output = zip::ZipWriter::new(output);
 
+  for i in 0..input.len() {
+    let mut file = input.by_index(i)?;
+    if file.name() == "content.xml" || file.name() == "styles.xml" { continue };
+    let options = zip::write::FileOptions::default().compression_method(file.compression());
+    output.start_file(file.name(), options)?;
+    std::io::copy(&mut file, &mut output)?;
+}
+
   let styles = input.by_name("styles.xml")?;
   let options = zip::write::FileOptions::default().compression_method(styles.compression());
   output.start_file("styles.xml", options)?;
