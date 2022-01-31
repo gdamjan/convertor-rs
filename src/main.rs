@@ -4,7 +4,8 @@ use quick_xml::events::{Event};
 use std::fs::File;
 use std::io::{BufReader, BufRead, Read, Write};
 
-
+/// Find all styles that use the YUSCII fonts, and convert them to use normal fonts
+/// Keep track what styles were converted and which font was used
 fn convert_styles(styles: impl Read, _converted: &mut impl Write) -> std::io::Result<()> {
   let reader = BufReader::new(styles);
   let mut reader = Reader::from_reader(reader);
@@ -15,13 +16,14 @@ fn convert_styles(styles: impl Read, _converted: &mut impl Write) -> std::io::Re
     match reader.read_event(&mut buf) {
       Ok(Event::Empty(ref e)) => match e.name() {
         b"style:text-properties" => {
-          let v = e
-            .attributes()
-            .filter_map(|a| a.ok().filter(|a| a.key == b"style:font-name").map(|a| a.value))
-            .collect::<Vec<_>>();
-          if v.len() > 0 {
-            let font_name = String::from_utf8_lossy(&v[0]);
-            println!("{}: {}", String::from_utf8_lossy(e.name()), font_name);
+          let font_name = e.attributes()
+            .filter_map(|res| res.ok())
+            .find(|a| a.key == b"style:font-name");
+
+          if let Some(font_name) = font_name {
+            let font_name = String::from_utf8_lossy(&font_name.value);
+            let e_name = String::from_utf8_lossy(e.name());
+            println!("{}: {}", e_name, font_name);
           }
         }
         _ => (),
@@ -92,7 +94,7 @@ fn main() -> std::io::Result<()> {
 
   for i in 0..input.len() {
     let file = input.by_index(i)?;
-    if file.name() == "content.xml" || file.name() == "styles.xml" { continue };
+    if ["styles.xml", "content.xml"].contains(&file.name()) { continue; }
     output.raw_copy_file(file)?;
 }
 
