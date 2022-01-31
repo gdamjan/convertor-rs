@@ -1,8 +1,8 @@
+use quick_xml::events::Event;
 use quick_xml::{Reader, Writer};
-use quick_xml::events::{Event};
 
 use std::fs::File;
-use std::io::{BufReader, BufRead, Read, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 
 /// Find all styles that use the YUSCII fonts, and convert them to use normal fonts
 /// Keep track what styles were converted and which font was used
@@ -18,7 +18,8 @@ fn convert_styles(styles: impl Read, converted: &mut impl Write) -> std::io::Res
       Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
       Ok(Event::Eof) => break,
       Ok(Event::Empty(ref e)) if e.name() == b"style:text-properties" => {
-        let font_name = e.attributes()
+        let font_name = e
+          .attributes()
           .filter_map(|res| res.ok())
           .find(|a| a.key == b"style:font-name");
 
@@ -27,7 +28,7 @@ fn convert_styles(styles: impl Read, converted: &mut impl Write) -> std::io::Res
           let e_name = String::from_utf8_lossy(e.name());
           println!("{}: {}", e_name, font_name);
         }
-      },
+      }
       Ok(e) => assert!(writer.write_event(&e).is_ok()),
     }
   }
@@ -37,8 +38,8 @@ fn convert_styles(styles: impl Read, converted: &mut impl Write) -> std::io::Res
 
 fn convert_body<B, W>(reader: &mut Reader<B>, writer: &mut Writer<W>)
 where
-    B: BufRead,
-    W: Write,
+  B: BufRead,
+  W: Write,
 {
   let mut buf = Vec::new();
   loop {
@@ -49,11 +50,13 @@ where
       Ok(Event::Text(ref e)) => {
         println!("{}", e.unescape_and_decode(&reader).unwrap());
         assert!(writer.write_event(Event::Text(e.clone())).is_ok());
-      },
+      }
       Ok(Event::End(ref e)) => {
         assert!(writer.write_event(Event::End(e.clone())).is_ok());
-        if e.name() ==  b"office:body" { break };
-      },
+        if e.name() == b"office:body" {
+          break;
+        };
+      }
       Ok(e) => assert!(writer.write_event(&e).is_ok()),
     }
   }
@@ -74,7 +77,7 @@ fn convert_content(content: impl Read, converted: &mut impl Write) -> std::io::R
       Ok(Event::Start(ref e)) if e.name() == b"office:body" => {
         assert!(writer.write_event(Event::Start(e.clone())).is_ok());
         convert_body(&mut reader, &mut writer);
-      },
+      }
       Ok(e) => assert!(writer.write_event(&e).is_ok()),
     }
   }
@@ -91,9 +94,11 @@ fn main() -> std::io::Result<()> {
 
   for i in 0..input.len() {
     let file = input.by_index(i)?;
-    if ["styles.xml", "content.xml"].contains(&file.name()) { continue; }
+    if ["styles.xml", "content.xml"].contains(&file.name()) {
+      continue;
+    }
     output.raw_copy_file(file)?;
-}
+  }
 
   let styles = input.by_name("styles.xml")?;
   let options = zip::write::FileOptions::default().compression_method(styles.compression());
