@@ -1,12 +1,11 @@
 use quick_xml::{Reader, Writer};
-use quick_xml::events::{Event, BytesEnd, BytesStart};
+use quick_xml::events::{Event};
 
 use std::fs::File;
-use std::io::{Cursor, BufReader, BufRead, Read, Write};
-use std::iter;
+use std::io::{BufReader, BufRead, Read, Write};
 
 
-fn convert_styles(styles: impl Read, converted: &mut impl Write) -> std::io::Result<()> {
+fn convert_styles(styles: impl Read, _converted: &mut impl Write) -> std::io::Result<()> {
   let reader = BufReader::new(styles);
   let mut reader = Reader::from_reader(reader);
 
@@ -62,7 +61,7 @@ where
 fn convert_content(content: impl Read, converted: &mut impl Write) -> std::io::Result<()> {
   let reader = BufReader::new(content);
   let mut reader = Reader::from_reader(reader);
-  reader.trim_text(true);
+  reader.trim_text(true); // FIXME: remove from the final version
 
   let mut writer = Writer::new(converted);
   let mut buf = Vec::new();
@@ -92,11 +91,9 @@ fn main() -> std::io::Result<()> {
   let mut output = zip::ZipWriter::new(output);
 
   for i in 0..input.len() {
-    let mut file = input.by_index(i)?;
+    let file = input.by_index(i)?;
     if file.name() == "content.xml" || file.name() == "styles.xml" { continue };
-    let options = zip::write::FileOptions::default().compression_method(file.compression());
-    output.start_file(file.name(), options)?;
-    std::io::copy(&mut file, &mut output)?;
+    output.raw_copy_file(file)?;
 }
 
   let styles = input.by_name("styles.xml")?;
