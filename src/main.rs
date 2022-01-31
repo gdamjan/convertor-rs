@@ -92,11 +92,13 @@ fn main() -> std::io::Result<()> {
   let mut output = zip::ZipWriter::new(output);
 
   let styles = input.by_name("styles.xml")?;
-  output.start_file("styles.xml", zip::write::FileOptions::default())?;
+  let options = zip::write::FileOptions::default().compression_method(styles.compression());
+  output.start_file("styles.xml", options)?;
   convert_styles(styles, &mut output)?;
 
   let content = input.by_name("content.xml")?;
-  output.start_file("content.xml", zip::write::FileOptions::default())?;
+  let options = zip::write::FileOptions::default().compression_method(content.compression());
+  output.start_file("content.xml", options)?;
   convert_content(content, &mut output)?;
 
   output.finish()?;
